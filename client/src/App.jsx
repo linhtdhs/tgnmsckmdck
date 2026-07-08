@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Play, 
-  Pause, 
-  Search, 
-  Tag, 
-  Music, 
-  Link as LinkIcon, 
-  Download, 
-  Trash2, 
-  X, 
-  Plus, 
-  Volume2, 
-  VolumeX, 
-  Shuffle, 
-  RotateCcw, 
-  CheckCircle, 
-  Loader2 
+import {
+  Play,
+  Pause,
+  Search,
+  Tag,
+  Music,
+  Link as LinkIcon,
+  Download,
+  Trash2,
+  X,
+  Plus,
+  Volume2,
+  VolumeX,
+  Shuffle,
+  RotateCcw,
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 
 const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : window.location.origin;
@@ -32,7 +32,7 @@ export default function App() {
   const [urlInput, setUrlInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null); // { exists: boolean, song/info }
-  
+
   // Downloading & converting SSE state
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -53,7 +53,7 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
-  
+
   // Inline tag entry
   const [activeInlineTagInput, setActiveInlineTagInput] = useState(null); // songId
   const [inlineTagValue, setInlineTagValue] = useState('');
@@ -82,7 +82,7 @@ export default function App() {
       const tagsParam = selectedTags.join(',');
       const searchParam = encodeURIComponent(searchQuery);
       const url = `${API_BASE}/api/songs?search=${searchParam}&tags=${tagsParam}&matchType=${matchType}`;
-      
+
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to load songs');
       const data = await res.json();
@@ -155,7 +155,7 @@ export default function App() {
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      
+
       if (data.type === 'status') {
         setDownloadStatus(data.message);
       } else if (data.type === 'progress') {
@@ -201,11 +201,11 @@ export default function App() {
 
       if (!res.ok) throw new Error('Failed to add tag');
       const newTag = await res.json();
-      
+
       showToast(`Added tag "${newTag.name}"`);
       fetchSongs();
       fetchTags();
-      
+
       // Update active track view if this song is playing
       if (currentTrack && currentTrack.id === songId) {
         setCurrentTrack(prev => {
@@ -225,7 +225,7 @@ export default function App() {
       });
 
       if (!res.ok) throw new Error('Failed to remove tag');
-      
+
       showToast('Tag removed');
       fetchSongs();
       fetchTags();
@@ -271,10 +271,10 @@ export default function App() {
       audioRef.current.src = `${API_BASE}/audio/${song.filename}`;
       audioRef.current.volume = isMuted ? 0 : volume;
       audioRef.current.loop = isLooping;
-      
+
       setCurrentTrack(song);
       setIsPlaying(true);
-      
+
       audioRef.current.play().catch(err => {
         console.error('Audio play error:', err);
         showToast('Failed to start audio playback', 'error');
@@ -373,7 +373,7 @@ export default function App() {
 
   const handleNextTrack = () => {
     if (songs.length === 0) return;
-    
+
     let nextSong = null;
     if (isShuffling) {
       const randomIndex = Math.floor(Math.random() * songs.length);
@@ -389,7 +389,7 @@ export default function App() {
     } else {
       nextSong = songs[0];
     }
-    
+
     if (nextSong) {
       playTrack(nextSong);
     }
@@ -397,7 +397,7 @@ export default function App() {
 
   const handlePrevTrack = () => {
     if (songs.length === 0 || !currentTrack) return;
-    
+
     let prevSong = null;
     const currentIndex = songs.findIndex(s => s.id === currentTrack.id);
     if (currentIndex !== -1 && currentIndex > 0) {
@@ -406,7 +406,7 @@ export default function App() {
       // Wrap around to end
       prevSong = songs[songs.length - 1];
     }
-    
+
     if (prevSong) {
       playTrack(prevSong);
     }
@@ -414,7 +414,7 @@ export default function App() {
 
   // Filters Toggles
   const handleTagToggle = (tagName) => {
-    setSelectedTags(prev => 
+    setSelectedTags(prev =>
       prev.includes(tagName)
         ? prev.filter(t => t !== tagName)
         : [...prev, tagName]
@@ -467,9 +467,9 @@ export default function App() {
             disabled={downloading || isValidating}
             required
           />
-          <button 
-            type="submit" 
-            className="btn-primary" 
+          <button
+            type="submit"
+            className="btn-primary"
             disabled={downloading || isValidating}
           >
             {isValidating ? (
@@ -478,7 +478,7 @@ export default function App() {
                 <span>Checking...</span>
               </>
             ) : (
-              <span>Check Link</span>
+              <span>TGEN GO GO GO!!!</span>
             )}
           </button>
         </form>
@@ -489,8 +489,8 @@ export default function App() {
             <div className="progress-details">
               <div className="progress-title">{downloadStatus}</div>
               <div className="progress-bar-container">
-                <div 
-                  className="progress-bar-fill" 
+                <div
+                  className="progress-bar-fill"
                   style={{ width: `${downloadProgress}%` }}
                 ></div>
               </div>
@@ -528,7 +528,7 @@ export default function App() {
                       }
                     }}
                   />
-                  <button 
+                  <button
                     className="btn-primary"
                     onClick={() => {
                       const input = document.getElementById(`suggested-tag-${validationResult.song.id}`);
@@ -549,10 +549,10 @@ export default function App() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                <img 
-                  className="progress-thumbnail" 
-                  src={validationResult.info.thumbnail} 
-                  alt={validationResult.info.title} 
+                <img
+                  className="progress-thumbnail"
+                  src={validationResult.info.thumbnail}
+                  alt={validationResult.info.title}
                 />
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: '600', fontSize: '1rem', lineHeight: '1.4' }}>
@@ -604,7 +604,7 @@ export default function App() {
                     }
                   }}
                 />
-                <button 
+                <button
                   className="btn-primary"
                   onClick={() => {
                     const input = document.getElementById(`downloaded-tag-${justDownloadedSong.id}`);
@@ -635,14 +635,14 @@ export default function App() {
               <h3 style={{ fontSize: '1rem', fontWeight: '700' }}>Filter by Tags</h3>
               {selectedTags.length > 1 && (
                 <div className="toggle-switch">
-                  <div 
+                  <div
                     className={`toggle-option ${matchType === 'all' ? 'active' : ''}`}
                     onClick={() => setMatchType('all')}
                     title="Match all selected tags (Intersection)"
                   >
                     Match All
                   </div>
-                  <div 
+                  <div
                     className={`toggle-option ${matchType === 'any' ? 'active' : ''}`}
                     onClick={() => setMatchType('any')}
                     title="Match any of the tags (Union)"
@@ -662,14 +662,14 @@ export default function App() {
                 {tags.map(t => {
                   const isChecked = selectedTags.includes(t.name);
                   return (
-                    <div 
-                      key={t.id} 
+                    <div
+                      key={t.id}
                       className={`tag-filter-item ${isChecked ? 'active' : ''}`}
                       onClick={() => handleTagToggle(t.name)}
                     >
                       <div className="tag-filter-name">
                         <div className="tag-filter-checkbox">
-                          {isChecked && <div style={{ width: 8, height: 8, borderRadius: 1, backgroundColor: '#000' }}></div>}
+                          {isChecked && <div style={{ width: 8, height: 8, borderRadius: 0, backgroundColor: '#000' }}></div>}
                         </div>
                         <span style={{ textTransform: 'capitalize' }}>{t.name}</span>
                       </div>
@@ -678,10 +678,10 @@ export default function App() {
                 })}
               </div>
             )}
-            
+
             {selectedTags.length > 0 && (
-              <button 
-                className="btn-secondary" 
+              <button
+                className="btn-secondary"
                 style={{ width: '100%', marginTop: '1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                 onClick={() => setSelectedTags([])}
               >
@@ -704,7 +704,7 @@ export default function App() {
               className="search-input"
             />
             {searchQuery && (
-              <button 
+              <button
                 style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                 onClick={() => setSearchQuery('')}
               >
@@ -719,8 +719,8 @@ export default function App() {
                 <Music className="empty-library-icon" />
                 <p style={{ fontWeight: '500' }}>No songs found in the library</p>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '-0.5rem' }}>
-                  {selectedTags.length > 0 || searchQuery.trim() 
-                    ? 'Try clearing your active tags filter or search query.' 
+                  {selectedTags.length > 0 || searchQuery.trim()
+                    ? 'Try clearing your active tags filter or search query.'
                     : 'Paste a YouTube video link above to download and catalog your first song!'}
                 </p>
               </div>
@@ -728,17 +728,17 @@ export default function App() {
               songs.map(song => {
                 const isActiveTrack = currentTrack && currentTrack.id === song.id;
                 return (
-                  <div 
-                    key={song.id} 
+                  <div
+                    key={song.id}
                     className={`song-card glass ${isActiveTrack ? 'playing' : ''}`}
                   >
-                    <div 
+                    <div
                       className="song-thumbnail-wrapper"
                       onClick={() => playTrack(song)}
                     >
-                      <img 
-                        src={song.thumbnail || 'https://placehold.co/600x400/10141f/f3f4f6?text=No+Thumbnail'} 
-                        alt={song.title} 
+                      <img
+                        src={song.thumbnail || 'https://placehold.co/600x400/10141f/f3f4f6?text=No+Thumbnail'}
+                        alt={song.title}
                         className="song-card-thumbnail"
                       />
                       <div className="song-card-overlay">
@@ -752,20 +752,20 @@ export default function App() {
                     </div>
 
                     <div className="song-info">
-                      <h3 
-                        className="song-card-title" 
+                      <h3
+                        className="song-card-title"
                         onClick={() => playTrack(song)}
                         title={song.title}
                       >
                         {song.title}
                       </h3>
-                      
+
                       <div className="song-card-tags">
                         {(song.tags || []).map(t => (
                           <span key={t.id} className="song-tag-badge">
                             <Tag size={10} />
                             <span style={{ textTransform: 'capitalize' }}>{t.name}</span>
-                            <button 
+                            <button
                               className="btn-tag-delete"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -799,7 +799,7 @@ export default function App() {
                                 }
                               }}
                             />
-                            <button 
+                            <button
                               className="action-btn"
                               onClick={() => {
                                 handleAddTag(song.id, inlineTagValue);
@@ -810,7 +810,7 @@ export default function App() {
                             >
                               Add
                             </button>
-                            <button 
+                            <button
                               className="action-btn"
                               onClick={() => {
                                 setActiveInlineTagInput(null);
@@ -822,7 +822,7 @@ export default function App() {
                             </button>
                           </div>
                         ) : (
-                          <button 
+                          <button
                             className="add-tag-inline-btn"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -840,15 +840,15 @@ export default function App() {
                           {new Date(song.created_at).toLocaleDateString()}
                         </span>
                         <div className="song-actions-buttons" onClick={e => e.stopPropagation()}>
-                          <a 
-                            href={`${API_BASE}/api/songs/${song.id}/download`} 
-                            className="action-btn" 
+                          <a
+                            href={`${API_BASE}/api/songs/${song.id}/download`}
+                            className="action-btn"
                             title="Download MP3"
                           >
                             <Download size={14} />
                           </a>
-                          <button 
-                            className="action-btn delete-btn" 
+                          <button
+                            className="action-btn delete-btn"
                             onClick={() => handleDeleteSong(song.id)}
                             title="Delete Song"
                           >
@@ -885,9 +885,9 @@ export default function App() {
           <div className="player-main-layout">
             {/* Left track details */}
             <div className="player-track-info">
-              <img 
-                src={currentTrack.thumbnail || 'https://placehold.co/120x120/10141f/f3f4f6?text=MP3'} 
-                alt={currentTrack.title} 
+              <img
+                src={currentTrack.thumbnail || 'https://placehold.co/120x120/10141f/f3f4f6?text=MP3'}
+                alt={currentTrack.title}
                 className="player-thumbnail"
               />
               <div className="player-text-details">
@@ -895,7 +895,7 @@ export default function App() {
                   {currentTrack.title}
                 </div>
                 <div className="player-track-tags">
-                  {currentTrack.tags && currentTrack.tags.length > 0 
+                  {currentTrack.tags && currentTrack.tags.length > 0
                     ? currentTrack.tags.map(t => t.name).join(', ')
                     : 'No tags'}
                 </div>
@@ -911,14 +911,14 @@ export default function App() {
             {/* Center controls */}
             <div className="player-controls">
               <div className="control-buttons-row">
-                <button 
-                  className={`player-btn ${isShuffling ? 'active' : ''}`} 
+                <button
+                  className={`player-btn ${isShuffling ? 'active' : ''}`}
                   onClick={() => setIsShuffling(!isShuffling)}
                   title="Shuffle"
                 >
                   <Shuffle size={16} />
                 </button>
-                
+
                 <button className="player-btn" onClick={handlePrevTrack} title="Previous">
                   <Play size={18} style={{ transform: 'rotate(180deg)' }} fill="currentColor" />
                 </button>
@@ -931,8 +931,8 @@ export default function App() {
                   <Play size={18} fill="currentColor" />
                 </button>
 
-                <button 
-                  className={`player-btn ${isLooping ? 'active' : ''}`} 
+                <button
+                  className={`player-btn ${isLooping ? 'active' : ''}`}
                   onClick={toggleLoop}
                   title="Loop"
                 >
