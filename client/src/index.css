@@ -644,6 +644,115 @@ h3 {
   gap: 1rem;
 }
 
+.floating-player.playing {
+  border-color: var(--accent-pink);
+  box-shadow: 8px 8px 0px var(--accent-pink);
+}
+
+.player-window-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--accent-cyan);
+  color: #000;
+  padding: 0.35rem 0.75rem;
+  margin: -1rem -1.5rem 0.25rem -1.5rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.65rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.floating-player.playing .player-window-header {
+  background: var(--accent-pink);
+  color: #fff;
+}
+
+.player-close-btn-top {
+  background: var(--bg-primary);
+  border: 2px solid #000;
+  color: var(--text-primary);
+  width: 20px;
+  height: 20px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-close-btn-top:hover {
+  background: var(--accent-yellow);
+  color: #000;
+}
+
+.player-close-btn-top:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.player-utility {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 250px;
+  justify-content: flex-end;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 150px;
+}
+
+.eq-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+  width: 24px;
+}
+
+.eq-bar {
+  width: 4px;
+  height: 100%;
+  background: var(--accent-green);
+  transform-origin: bottom;
+  animation: bounce-eq 1s ease infinite alternate;
+}
+
+.floating-player:not(.playing) .eq-bar {
+  animation-play-state: paused;
+  transform: scaleY(0.15);
+}
+
+.eq-bar-1 {
+  animation-delay: 0.1s;
+}
+
+.eq-bar-2 {
+  animation-delay: 0.4s;
+}
+
+.eq-bar-3 {
+  animation-delay: 0.2s;
+}
+
+@keyframes bounce-eq {
+  0% {
+    transform: scaleY(0.15);
+  }
+
+  50% {
+    transform: scaleY(0.9);
+  }
+
+  100% {
+    transform: scaleY(0.35);
+  }
+}
+
 .player-main-layout {
   display: flex;
   align-items: center;
@@ -752,7 +861,7 @@ h3 {
   align-items: center;
   gap: 1rem;
   width: 100%;
-  max-width: 600px;
+  max-width: 850px;
   font-size: 1rem;
   color: var(--accent-green);
 }

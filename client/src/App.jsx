@@ -457,7 +457,7 @@ export default function App() {
       <header className="app-header">
         <div className="brand">
           <Music size={32} strokeWidth={2.5} style={{ color: 'var(--accent-cyan)' }} />
-          <span>tgensic</span>
+          <span>tgnmsckmdck</span>
         </div>
       </header>
 
@@ -488,7 +488,7 @@ export default function App() {
                 <span>Checking...</span>
               </>
             ) : (
-              <span>TGEN GO GO GO!!!</span>
+              <span>I CHOOSE YOU!!!</span>
             )}
           </button>
         </form>
@@ -670,8 +670,8 @@ export default function App() {
             ) : (
               <div className="tag-list-filter">
                 {(() => {
-                  const filtered = tags.filter(t => 
-                    removeAccents(t.name).includes(removeAccents(searchQuery)) || 
+                  const filtered = tags.filter(t =>
+                    removeAccents(t.name).includes(removeAccents(searchQuery)) ||
                     selectedTags.includes(t.name)
                   );
                   if (filtered.length === 0) {
@@ -891,6 +891,16 @@ export default function App() {
       {/* Floating Bottom Audio Player */}
       {currentTrack && (
         <div className={`floating-player glass ${isPlaying ? 'playing' : ''}`}>
+          {/* Window Header */}
+          <div className="player-window-header">
+            <span className="player-window-title">
+              {isPlaying ? '⚡ NOW PLAYING ⚡' : '❚❚ PAUSED'}
+            </span>
+            <button className="player-close-btn-top" onClick={stopTrack} title="Close Player">
+              <X size={12} />
+            </button>
+          </div>
+
           {/* Progress scrubber bar */}
           <div className="scrub-row">
             <span className="player-time">{formatTime(currentTime)}</span>
@@ -903,6 +913,12 @@ export default function App() {
               className="slider-input"
             />
             <span className="player-time">{formatTime(duration)}</span>
+            {/* Equalizer animation when playing */}
+            <div className="eq-container">
+              <div className="eq-bar eq-bar-1"></div>
+              <div className="eq-bar eq-bar-2"></div>
+              <div className="eq-bar eq-bar-3"></div>
+            </div>
           </div>
 
           <div className="player-main-layout">
@@ -922,12 +938,6 @@ export default function App() {
                     ? currentTrack.tags.map(t => t.name).join(', ')
                     : 'No tags'}
                 </div>
-              </div>
-              {/* Equalizer animation when playing */}
-              <div className="eq-container">
-                <div className="eq-bar eq-bar-1"></div>
-                <div className="eq-bar eq-bar-2"></div>
-                <div className="eq-bar eq-bar-3"></div>
               </div>
             </div>
 
@@ -980,9 +990,6 @@ export default function App() {
                   className="slider-input"
                 />
               </div>
-              <button className="player-btn" onClick={stopTrack} title="Close Player">
-                <X size={16} />
-              </button>
             </div>
           </div>
         </div>
