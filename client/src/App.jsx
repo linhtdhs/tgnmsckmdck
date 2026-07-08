@@ -558,7 +558,7 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              <div className="validation-wrapper">
                 <img
                   className="progress-thumbnail"
                   src={validationResult.info.thumbnail}
@@ -571,7 +571,7 @@ export default function App() {
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
                     Duration: {formatTime(validationResult.info.duration)}
                   </p>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                  <div className="validation-buttons">
                     <button className="btn-primary" onClick={handleDownload}>
                       <Download size={16} />
                       <span>Convert and Save to Library</span>
@@ -802,7 +802,7 @@ export default function App() {
                         ))}
 
                         {activeInlineTagInput === song.id ? (
-                          <div style={{ display: 'flex', gap: '0.25rem', width: '100%', marginTop: '0.25rem' }} onClick={e => e.stopPropagation()}>
+                          <div className="inline-tag-editor" onClick={e => e.stopPropagation()}>
                             <input
                               type="text"
                               value={inlineTagValue}
