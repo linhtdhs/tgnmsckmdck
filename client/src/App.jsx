@@ -41,6 +41,9 @@ export default function App() {
   // Toast notifications
   const [toasts, setToasts] = useState([]);
 
+  // Newly downloaded song (to prompt for tag)
+  const [justDownloadedSong, setJustDownloadedSong] = useState(null);
+
   // Audio Player State
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -115,6 +118,7 @@ export default function App() {
 
     setIsValidating(true);
     setValidationResult(null);
+    setJustDownloadedSong(null);
     try {
       const res = await fetch(`${API_BASE}/api/check-link`, {
         method: 'POST',
@@ -165,6 +169,8 @@ export default function App() {
         showToast(`Successfully downloaded "${data.song.title}"!`);
         fetchSongs();
         fetchTags();
+        // Save the downloaded song details to prompt user to add a tag
+        setJustDownloadedSong(data.song);
         // Automatically play the new track!
         playTrack(data.song);
       } else if (data.type === 'error') {
@@ -569,6 +575,55 @@ export default function App() {
             )}
           </div>
         )}
+
+        {/* Success / Add Tag Card for newly downloaded song */}
+        {justDownloadedSong && !downloading && (
+          <div className="success-action-card" style={{ background: 'rgba(52, 211, 153, 0.05)', borderColor: 'rgba(52, 211, 153, 0.2)' }}>
+            <div>
+              <p style={{ fontWeight: '600', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle size={18} />
+                <span>Successfully downloaded and added to library!</span>
+              </p>
+              <p style={{ fontSize: '1.1rem', fontWeight: '700', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                "{justDownloadedSong.title}"
+              </p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                Would you like to assign a custom tag to this new song right now?
+              </p>
+              <div className="tag-suggestion-group" style={{ marginTop: '1rem' }}>
+                <input
+                  type="text"
+                  placeholder="Enter tag (e.g. Pop, Chill, Rock)..."
+                  className="tag-input-inline"
+                  id={`downloaded-tag-${justDownloadedSong.id}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddTag(justDownloadedSong.id, e.target.value);
+                      e.target.value = '';
+                      setJustDownloadedSong(null);
+                    }
+                  }}
+                />
+                <button 
+                  className="btn-primary"
+                  onClick={() => {
+                    const input = document.getElementById(`downloaded-tag-${justDownloadedSong.id}`);
+                    if (input && input.value.trim()) {
+                      handleAddTag(justDownloadedSong.id, input.value);
+                      input.value = '';
+                      setJustDownloadedSong(null);
+                    }
+                  }}
+                >
+                  Add Tag
+                </button>
+                <button className="btn-secondary" onClick={() => setJustDownloadedSong(null)}>
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Main Music Library Dashboard */}
@@ -706,7 +761,7 @@ export default function App() {
                       </h3>
                       
                       <div className="song-card-tags">
-                        {song.tags.map(t => (
+                        {(song.tags || []).map(t => (
                           <span key={t.id} className="song-tag-badge">
                             <Tag size={10} />
                             <span style={{ textTransform: 'capitalize' }}>{t.name}</span>
@@ -840,7 +895,7 @@ export default function App() {
                   {currentTrack.title}
                 </div>
                 <div className="player-track-tags">
-                  {currentTrack.tags.length > 0 
+                  {currentTrack.tags && currentTrack.tags.length > 0 
                     ? currentTrack.tags.map(t => t.name).join(', ')
                     : 'No tags'}
                 </div>

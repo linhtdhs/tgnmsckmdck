@@ -127,6 +127,19 @@ export async function downloadAndConvert(url, onProgress) {
     const proc = spawn(ytdlp, args);
     
     let stderr = '';
+    let isFinished = false;
+
+    const cleanupAndResolve = () => {
+      if (isFinished) return;
+      isFinished = true;
+      resolve();
+    };
+
+    const cleanupAndReject = (err) => {
+      if (isFinished) return;
+      isFinished = true;
+      reject(err);
+    };
     
     proc.stdout.on('data', (data) => {
       const output = data.toString();
@@ -141,13 +154,28 @@ export async function downloadAndConvert(url, onProgress) {
     proc.stderr.on('data', (data) => {
       stderr += data.toString();
     });
+
+    proc.on('error', (err) => {
+      console.error('yt-dlp process spawn error:', err);
+      cleanupAndReject(err);
+    });
+    
+    proc.on('exit', (code, signal) => {
+      console.log(`yt-dlp process exited with code ${code} and signal ${signal}`);
+      if (code !== 0 && code !== null) {
+        cleanupAndReject(new Error(`Download failed. yt-dlp exit code ${code}. Error: ${stderr}`));
+      } else {
+        cleanupAndResolve();
+      }
+    });
     
     proc.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`yt-dlp exited with error code ${code}: ${stderr}`);
-        return reject(new Error(`Download failed. yt-dlp error: ${stderr}`));
+      console.log(`yt-dlp stream closed with code ${code}`);
+      if (code !== 0 && code !== null) {
+        cleanupAndReject(new Error(`Download failed. yt-dlp close code ${code}. Error: ${stderr}`));
+      } else {
+        cleanupAndResolve();
       }
-      resolve();
     });
   });
 }

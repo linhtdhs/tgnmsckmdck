@@ -50,11 +50,42 @@ db.exec(`
 // Helpers
 
 /**
- * Gets a song by its YouTube video ID
+ * Gets a song by its YouTube video ID, including its associated tags
  */
 export function getSongByYoutubeId(youtubeId) {
-  const stmt = db.prepare('SELECT * FROM songs WHERE youtube_id = ?');
-  return stmt.get(youtubeId);
+  const stmt = db.prepare(`
+    SELECT 
+      s.id, 
+      s.youtube_id, 
+      s.title, 
+      s.filename, 
+      s.duration, 
+      s.thumbnail, 
+      s.created_at,
+      GROUP_CONCAT(t.name) as tags_string,
+      GROUP_CONCAT(t.id) as tag_ids_string
+    FROM songs s
+    LEFT JOIN song_tags st ON s.id = st.song_id
+    LEFT JOIN tags t ON st.tag_id = t.id
+    WHERE s.youtube_id = ?
+    GROUP BY s.id
+  `);
+  
+  const row = stmt.get(youtubeId);
+  if (!row) return null;
+
+  const tags = row.tags_string 
+    ? row.tags_string.split(',').map((name, index) => ({
+        id: parseInt(row.tag_ids_string.split(',')[index], 10),
+        name
+      }))
+    : [];
+
+  const song = { ...row };
+  delete song.tags_string;
+  delete song.tag_ids_string;
+  song.tags = tags;
+  return song;
 }
 
 /**
@@ -66,7 +97,15 @@ export function insertSong({ youtube_id, title, filename, duration, thumbnail })
     VALUES (?, ?, ?, ?, ?)
   `);
   const result = stmt.run(youtube_id, title, filename, duration, thumbnail);
-  return { id: result.lastInsertRowid, youtube_id, title, filename, duration, thumbnail };
+  return { 
+    id: result.lastInsertRowid, 
+    youtube_id, 
+    title, 
+    filename, 
+    duration, 
+    thumbnail,
+    tags: [] 
+  };
 }
 
 /**
