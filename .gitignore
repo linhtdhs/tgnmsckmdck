@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Local media storage (downloaded MP3s)
+data/media/*
+!data/media/.gitkeep
+
+# Local SQLite databases and temp files
+data/*.sqlite
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
+
+# Compiled web assets
+client/dist/
+
+# Downloaded yt-dlp binaries
+bin/yt-dlp*
+
+# Logs and environment files
+*.log
+.env
+.env.local
+.DS_Store
