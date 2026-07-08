@@ -21,6 +21,17 @@ if (!fs.existsSync(mediaDir)) {
 const dbPath = path.join(dataDir, 'db.sqlite');
 const db = new DatabaseSync(dbPath);
 
+// Register custom function to remove accents / diacritics
+db.function('remove_accents', (str) => {
+  if (typeof str !== 'string') return '';
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+});
+
 // Initialize DB schema
 db.exec(`
   CREATE TABLE IF NOT EXISTS songs (
@@ -202,15 +213,21 @@ export function getSongs({ search, tags = [], matchType = 'all' } = {}) {
 
   // 2. Handle search filter (search in title or tag names)
   if (search && search.trim()) {
-    const searchVal = `%${search.trim().toLowerCase()}%`;
+    const cleanedSearch = search.trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase();
+    const searchVal = `%${cleanedSearch}%`;
     filterSql += `
       AND (
-        LOWER(s.title) LIKE ? 
+        remove_accents(s.title) LIKE ? 
         OR s.id IN (
           SELECT st.song_id 
           FROM song_tags st 
           JOIN tags t ON st.tag_id = t.id 
-          WHERE LOWER(t.name) LIKE ?
+          WHERE remove_accents(t.name) LIKE ?
         )
       )
     `;

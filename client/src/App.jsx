@@ -20,6 +20,16 @@ import {
 
 const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : window.location.origin;
 
+const removeAccents = (str) => {
+  if (!str) return '';
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+};
+
 export default function App() {
   // Library State
   const [songs, setSongs] = useState([]);
@@ -659,23 +669,36 @@ export default function App() {
               </p>
             ) : (
               <div className="tag-list-filter">
-                {tags.map(t => {
-                  const isChecked = selectedTags.includes(t.name);
-                  return (
-                    <div
-                      key={t.id}
-                      className={`tag-filter-item ${isChecked ? 'active' : ''}`}
-                      onClick={() => handleTagToggle(t.name)}
-                    >
-                      <div className="tag-filter-name">
-                        <div className="tag-filter-checkbox">
-                          {isChecked && <div style={{ width: 8, height: 8, borderRadius: 0, backgroundColor: '#000' }}></div>}
-                        </div>
-                        <span style={{ textTransform: 'capitalize' }}>{t.name}</span>
-                      </div>
-                    </div>
+                {(() => {
+                  const filtered = tags.filter(t => 
+                    removeAccents(t.name).includes(removeAccents(searchQuery)) || 
+                    selectedTags.includes(t.name)
                   );
-                })}
+                  if (filtered.length === 0) {
+                    return (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem 0' }}>
+                        No matching tags.
+                      </p>
+                    );
+                  }
+                  return filtered.map(t => {
+                    const isChecked = selectedTags.includes(t.name);
+                    return (
+                      <div
+                        key={t.id}
+                        className={`tag-filter-item ${isChecked ? 'active' : ''}`}
+                        onClick={() => handleTagToggle(t.name)}
+                      >
+                        <div className="tag-filter-name">
+                          <div className="tag-filter-checkbox">
+                            {isChecked && <div style={{ width: 8, height: 8, borderRadius: 0, backgroundColor: '#000' }}></div>}
+                          </div>
+                          <span style={{ textTransform: 'capitalize' }}>{t.name}</span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
 
