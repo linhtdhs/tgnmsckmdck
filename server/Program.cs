@@ -1,14 +1,20 @@
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using TgnmsckmdckApi.Services;
+using TgnmsckmdckApi.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ─── Services ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
-builder.Services.AddSingleton<DatabaseService>();
-builder.Services.AddSingleton<DownloaderService>();
+builder.Services.AddSingleton<IMasterRepository, MasterRepository>();
+builder.Services.AddSingleton<ISongRepository, SongRepository>();
+builder.Services.AddSingleton<ITagRepository, TagRepository>();
+builder.Services.AddSingleton<ISongsService, SongsService>();
+builder.Services.AddSingleton<ITagsService, TagsService>();
+builder.Services.AddSingleton<IDownloadService, DownloadService>();
 
+// ─── Rate Limiting ─────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("ApiPolicy", opt =>
@@ -34,19 +40,12 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-// ─── Ensure yt-dlp is ready at startup ──────────────────────────────────────
-var downloader = app.Services.GetRequiredService<DownloaderService>();
-_ = downloader.EnsureYtDlpAsync().ContinueWith(t =>
-{
-    if (t.IsFaulted)
-        app.Logger.LogError(t.Exception, "CRITICAL: Failed to download yt-dlp on startup");
-});
 
 // ─── Middleware ──────────────────────────────────────────────────────────────
 app.UseCors("DevCors");
 
 // Serve downloaded MP3 files
-var db = app.Services.GetRequiredService<DatabaseService>();
+var db = app.Services.GetRequiredService<IMasterRepository>();
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(db.GetMediaDir()),

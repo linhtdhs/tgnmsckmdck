@@ -6,7 +6,7 @@ namespace TgnmsckmdckApi.Controllers;
 
 [ApiController]
 [Route("api/songs")]
-public class SongsController(DatabaseService db, ILogger<SongsController> logger) : ControllerBase
+public class SongsController(ISongsService songsService, ILogger<SongsController> logger) : ControllerBase
 {
     // GET /api/songs?search=&tags=pop,rock&matchType=all
     [HttpGet]
@@ -14,13 +14,9 @@ public class SongsController(DatabaseService db, ILogger<SongsController> logger
                                    [FromQuery] string? tags,
                                    [FromQuery] string? matchType)
     {
-        var tagList = string.IsNullOrEmpty(tags)
-            ? []
-            : tags.Split(',').Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).ToList();
-
         try
         {
-            var songs = db.GetSongs(search, tagList, matchType ?? "all");
+            var songs = songsService.GetSongs(search, tags, matchType);
             return Ok(songs.Select(MapSong));
         }
         catch (Exception ex)
@@ -34,28 +30,19 @@ public class SongsController(DatabaseService db, ILogger<SongsController> logger
     [HttpGet("{id:int}/download")]
     public IActionResult DownloadMp3(int id)
     {
-        var song = db.GetSongById(id);
-        if (song is null) return NotFound(new { error = "Song not found" });
+        var info = songsService.GetSongDownloadInfo(id);
+        if (info is null) return NotFound(new { error = "Song or file not found" });
 
-        var filePath = Path.Combine(db.GetMediaDir(), song.Filename);
-        if (!System.IO.File.Exists(filePath)) return NotFound(new { error = "MP3 file not found on disk" });
-
-        var sanitizedTitle = string.Concat(song.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        return PhysicalFile(filePath, "audio/mpeg", $"{sanitizedTitle}.mp3");
+        return PhysicalFile(info.FilePath, info.ContentType, info.DownloadName);
     }
 
     // DELETE /api/songs/{id}
     [HttpDelete("{id:int}")]
     public IActionResult DeleteSong(int id)
     {
-        var song = db.GetSongById(id);
-        if (song is null) return NotFound(new { error = "Song not found" });
+        var success = songsService.DeleteSong(id);
+        if (!success) return NotFound(new { error = "Song not found" });
 
-        var filePath = Path.Combine(db.GetMediaDir(), song.Filename);
-        if (System.IO.File.Exists(filePath))
-            System.IO.File.Delete(filePath);
-
-        db.DeleteSong(id);
         return Ok(new { success = true });
     }
 
@@ -68,7 +55,7 @@ public class SongsController(DatabaseService db, ILogger<SongsController> logger
 
         try
         {
-            var tag = db.AddTagToSong(id, body.Tag);
+            var tag = songsService.AddTag(id, body.Tag);
             if (tag is null) return StatusCode(500, new { error = "Failed to associate tag" });
             return Ok(new { id = tag.Id, name = tag.Name });
         }
@@ -85,7 +72,7 @@ public class SongsController(DatabaseService db, ILogger<SongsController> logger
     {
         try
         {
-            db.RemoveTagFromSong(id, tagId);
+            songsService.RemoveTag(id, tagId);
             return Ok(new { success = true });
         }
         catch (Exception ex)
@@ -95,7 +82,7 @@ public class SongsController(DatabaseService db, ILogger<SongsController> logger
         }
     }
 
-    private static object MapSong(Song s) => new
+    public static object MapSong(Song s) => new
     {
         id         = s.Id,
         youtube_id = s.YoutubeId,

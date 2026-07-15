@@ -1,81 +1,17 @@
 using Microsoft.Data.Sqlite;
 using TgnmsckmdckApi.Models;
+using TgnmsckmdckApi.Services;
 using System.Text;
 
-namespace TgnmsckmdckApi.Services;
+namespace TgnmsckmdckApi.Repositories;
 
-public class DatabaseService
+public class SongRepository : ISongRepository
 {
-    private readonly string _dbPath;
-    private readonly string _dataDir;
-    private readonly string _mediaDir;
+    private readonly IMasterRepository _masterRepo;
 
-    public DatabaseService(IConfiguration config)
+    public SongRepository(IMasterRepository masterRepo)
     {
-        // Resolve data directory relative to the executable
-        var baseDir = AppContext.BaseDirectory;
-        _dataDir = Path.GetFullPath(Path.Combine(baseDir, "../../../../../data"));
-        _mediaDir = Path.Combine(_dataDir, "media");
-
-        Directory.CreateDirectory(_dataDir);
-        Directory.CreateDirectory(_mediaDir);
-
-        _dbPath = Path.Combine(_dataDir, "db.sqlite");
-        InitializeSchema();
-    }
-
-    private SqliteConnection CreateConnection()
-    {
-        var conn = new SqliteConnection($"Data Source={_dbPath}");
-        conn.Open();
-
-        // Register the accent-removal function so SQLite queries can call remove_accents()
-        conn.CreateFunction("remove_accents", (string? str) =>
-        {
-            if (str is null) return "";
-            var normalized = str.Normalize(NormalizationForm.FormD);
-            var sb = new StringBuilder();
-            foreach (var c in normalized)
-            {
-                var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
-                if (cat != System.Globalization.UnicodeCategory.NonSpacingMark)
-                    sb.Append(c);
-            }
-            return sb.ToString()
-                     .Replace('đ', 'd')
-                     .Replace('Đ', 'D')
-                     .ToLowerInvariant();
-        });
-
-        return conn;
-    }
-
-    private void InitializeSchema()
-    {
-        using var conn = CreateConnection();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            CREATE TABLE IF NOT EXISTS songs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                youtube_id TEXT UNIQUE NOT NULL,
-                title TEXT NOT NULL,
-                filename TEXT NOT NULL,
-                duration INTEGER NOT NULL,
-                thumbnail TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE TABLE IF NOT EXISTS tags (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS song_tags (
-                song_id INTEGER,
-                tag_id INTEGER,
-                PRIMARY KEY (song_id, tag_id),
-                FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE,
-                FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-            );";
-        cmd.ExecuteNonQuery();
+        _masterRepo = masterRepo;
     }
 
     private Song MapRow(SqliteDataReader reader, string? tagsString, string? tagIdsString)
@@ -102,13 +38,9 @@ public class DatabaseService
         };
     }
 
-    // -------------------------------------------------------------------------
-    // SONGS
-    // -------------------------------------------------------------------------
-
     public Song? GetSongByYoutubeId(string youtubeId)
     {
-        using var conn = CreateConnection();
+        using var conn = _masterRepo.CreateConnection();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT s.id, s.youtube_id, s.title, s.filename, s.duration, s.thumbnail, s.created_at,
@@ -130,7 +62,7 @@ public class DatabaseService
 
     public Song InsertSong(string youtubeId, string title, string filename, int duration, string? thumbnail)
     {
-        using var conn = CreateConnection();
+        using var conn = _masterRepo.CreateConnection();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             INSERT INTO songs (youtube_id, title, filename, duration, thumbnail)
@@ -148,7 +80,7 @@ public class DatabaseService
 
     public void DeleteSong(int id)
     {
-        using var conn = CreateConnection();
+        using var conn = _masterRepo.CreateConnection();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "DELETE FROM songs WHERE id = @id";
         cmd.Parameters.AddWithValue("@id", id);
@@ -158,7 +90,7 @@ public class DatabaseService
 
     public List<Song> GetSongs(string? search = null, List<string>? tags = null, string matchType = "all")
     {
-        using var conn = CreateConnection();
+        using var conn = _masterRepo.CreateConnection();
         using var cmd = conn.CreateCommand();
 
         var filterSql = new StringBuilder();
@@ -230,81 +162,6 @@ public class DatabaseService
 
     public Song? GetSongById(int id)
         => GetSongs().FirstOrDefault(s => s.Id == id);
-
-    public string GetMediaDir() => _mediaDir;
-
-    // -------------------------------------------------------------------------
-    // TAGS
-    // -------------------------------------------------------------------------
-
-    public List<Tag> GetTags()
-    {
-        using var conn = CreateConnection();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name FROM tags ORDER BY name ASC";
-        var result = new List<Tag>();
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
-            result.Add(new Tag { Id = reader.GetInt32(0), Name = reader.GetString(1) });
-        return result;
-    }
-
-    public Tag? AddTagToSong(int songId, string tagName)
-    {
-        var clean = tagName.Trim().ToLower();
-        if (string.IsNullOrEmpty(clean)) return null;
-
-        using var conn = CreateConnection();
-
-        using (var insertTag = conn.CreateCommand())
-        {
-            insertTag.CommandText = "INSERT OR IGNORE INTO tags (name) VALUES (@name)";
-            insertTag.Parameters.AddWithValue("@name", clean);
-            insertTag.ExecuteNonQuery();
-        }
-
-        int tagId;
-        using (var getTag = conn.CreateCommand())
-        {
-            getTag.CommandText = "SELECT id FROM tags WHERE name = @name";
-            getTag.Parameters.AddWithValue("@name", clean);
-            tagId = Convert.ToInt32(getTag.ExecuteScalar());
-        }
-
-        using (var link = conn.CreateCommand())
-        {
-            link.CommandText = "INSERT OR IGNORE INTO song_tags (song_id, tag_id) VALUES (@songId, @tagId)";
-            link.Parameters.AddWithValue("@songId", songId);
-            link.Parameters.AddWithValue("@tagId", tagId);
-            link.ExecuteNonQuery();
-        }
-
-        return new Tag { Id = tagId, Name = clean };
-    }
-
-    public void RemoveTagFromSong(int songId, int tagId)
-    {
-        using var conn = CreateConnection();
-
-        using (var del = conn.CreateCommand())
-        {
-            del.CommandText = "DELETE FROM song_tags WHERE song_id = @songId AND tag_id = @tagId";
-            del.Parameters.AddWithValue("@songId", songId);
-            del.Parameters.AddWithValue("@tagId", tagId);
-            del.ExecuteNonQuery();
-        }
-
-        using (var cleanup = conn.CreateCommand())
-        {
-            cleanup.CommandText = "DELETE FROM tags WHERE id = @tagId AND id NOT IN (SELECT DISTINCT tag_id FROM song_tags)";
-            cleanup.Parameters.AddWithValue("@tagId", tagId);
-            cleanup.ExecuteNonQuery();
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private void CleanupUnusedTags(SqliteConnection conn)
     {

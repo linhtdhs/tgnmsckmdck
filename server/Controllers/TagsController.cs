@@ -5,7 +5,7 @@ namespace TgnmsckmdckApi.Controllers;
 
 [ApiController]
 [Route("api/tags")]
-public class TagsController(DatabaseService db, ILogger<TagsController> logger) : ControllerBase
+public class TagsController(ITagsService tagsService, ILogger<TagsController> logger) : ControllerBase
 {
     // GET /api/tags
     [HttpGet]
@@ -13,7 +13,7 @@ public class TagsController(DatabaseService db, ILogger<TagsController> logger) 
     {
         try
         {
-            var tags = db.GetTags();
+            var tags = tagsService.GetTags();
             return Ok(tags.Select(t => new { id = t.Id, name = t.Name }));
         }
         catch (Exception ex)

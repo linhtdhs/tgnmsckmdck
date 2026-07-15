@@ -1,16 +1,20 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using TgnmsckmdckApi.Models;
+using TgnmsckmdckApi.Repositories;
 
 namespace TgnmsckmdckApi.Services;
 
 public record VideoInfo(string YoutubeId, string Title, int Duration, string? Thumbnail);
 
-public class DownloaderService
+public class DownloadService : IDownloadService
 {
+    private readonly ISongRepository _songRepo;
+    private readonly ILogger<DownloadService> _logger;
+
     private readonly string _binDir;
     private readonly string _mediaDir;
-    private readonly ILogger<DownloaderService> _logger;
 
     private static readonly string BinaryName = OperatingSystem.IsWindows() ? "yt-dlp.exe"
                                                : OperatingSystem.IsMacOS()  ? "yt-dlp_macos"
@@ -24,9 +28,11 @@ public class DownloaderService
 
     private readonly string _binaryPath;
 
-    public DownloaderService(IConfiguration config, ILogger<DownloaderService> logger)
+    public DownloadService(ISongRepository songRepo, ILogger<DownloadService> logger)
     {
+        _songRepo = songRepo;
         _logger = logger;
+        
         var baseDir = AppContext.BaseDirectory;
         _binDir = Path.GetFullPath(Path.Combine(baseDir, "../../../../../bin"));
         _mediaDir = Path.GetFullPath(Path.Combine(baseDir, "../../../../../data/media"));
@@ -35,7 +41,70 @@ public class DownloaderService
         _binaryPath = Path.Combine(_binDir, BinaryName);
     }
 
-    public async Task EnsureYtDlpAsync()
+    public async Task<CheckLinkResult> CheckLinkAsync(string url)
+    {
+        var youtubeId = ExtractYoutubeId(url);
+        if (youtubeId is null)
+        {
+            throw new ArgumentException("Invalid YouTube URL");
+        }
+
+        var existing = _songRepo.GetSongByYoutubeId(youtubeId);
+        if (existing is not null)
+        {
+            return new CheckLinkResult(true, existing);
+        }
+
+        var info = await GetMetadataAsync(url);
+        return new CheckLinkResult(false, null, new
+        {
+            youtube_id = info.YoutubeId,
+            title = info.Title,
+            duration = info.Duration,
+            thumbnail = info.Thumbnail
+        });
+    }
+
+    public async Task DownloadProgressAsync(string url, Func<string, object, Task> sendEventAsync)
+    {
+        var youtubeId = ExtractYoutubeId(url);
+        if (youtubeId is null)
+        {
+            throw new ArgumentException("Invalid YouTube URL");
+        }
+
+        try
+        {
+            var existing = _songRepo.GetSongByYoutubeId(youtubeId);
+            if (existing is not null)
+            {
+                await sendEventAsync("complete", existing);
+                return;
+            }
+
+            await sendEventAsync("status", new { message = "Fetching video metadata..." });
+            var info = await GetMetadataAsync(url);
+
+            await sendEventAsync("status", new { message = "Downloading and converting audio..." });
+            await DownloadAndConvertAsync(url, async (percent) =>
+            {
+                await sendEventAsync("progress", new { percent });
+            });
+
+            await sendEventAsync("status", new { message = "Saving to library..." });
+            var filename = $"{youtubeId}.mp3";
+            var song = _songRepo.InsertSong(youtubeId, info.Title, filename, info.Duration, info.Thumbnail);
+
+            await sendEventAsync("complete", song);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DownloadProgressAsync error");
+            await sendEventAsync("error", new { message = ex.Message });
+        }
+    }
+
+    private async Task EnsureYtDlpAsync()
     {
         if (File.Exists(_binaryPath)) return;
 
@@ -52,14 +121,14 @@ public class DownloaderService
         _logger.LogInformation("yt-dlp downloaded to {Path}", _binaryPath);
     }
 
-    public static string? ExtractYoutubeId(string url)
+    private static string? ExtractYoutubeId(string url)
     {
         var match = Regex.Match(url,
             @"(?:youtu\.be/|v/|u/\w/|embed/|watch\?v=|&v=)([^#&?]{11})");
         return match.Success ? match.Groups[1].Value : null;
     }
 
-    public async Task<VideoInfo> GetMetadataAsync(string url)
+    private async Task<VideoInfo> GetMetadataAsync(string url)
     {
         await EnsureYtDlpAsync();
         var (stdout, stderr, code) = await RunProcessAsync(_binaryPath,
@@ -88,7 +157,7 @@ public class DownloaderService
         return new VideoInfo(id, title, duration, thumbnail);
     }
 
-    public async Task DownloadAndConvertAsync(string url, Action<double> onProgress)
+    private async Task DownloadAndConvertAsync(string url, Action<double> onProgress)
     {
         await EnsureYtDlpAsync();
 
@@ -146,8 +215,6 @@ public class DownloaderService
 
         await tcs.Task;
     }
-
-    // -------------------------------------------------------------------------
 
     private static async Task<(string stdout, string stderr, int code)> RunProcessAsync(
         string binary, string[] args)
