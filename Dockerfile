@@ -14,7 +14,7 @@ COPY client/*.esproj ./client/
 RUN dotnet restore server/TgnmsckmdckApi.csproj
 COPY . ./
 WORKDIR /src/server
-RUN dotnet publish TgnmsckmdckApi.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish TgnmsckmdckApi.csproj -c Release -o /app/publish /p:UseAppHost=false /p:BuildCommand= /p:PublishCommand=
 
 # Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
