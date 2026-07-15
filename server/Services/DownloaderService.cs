@@ -63,7 +63,13 @@ public class DownloaderService
     {
         await EnsureYtDlpAsync();
         var (stdout, stderr, code) = await RunProcessAsync(_binaryPath,
-            ["--dump-json", "--skip-download", url]);
+            [
+                "--dump-json", 
+                "--skip-download", 
+                "--force-ipv4", 
+                "--extractor-args", "youtube:player_client=android,web", 
+                url
+            ]).ConfigureAwait(false);
 
         if (code != 0)
             throw new Exception($"yt-dlp metadata failed (code {code}): {stderr}");
@@ -92,6 +98,8 @@ public class DownloaderService
             "-x",
             "--audio-format", "mp3",
             "--audio-quality", "192K",
+            "--force-ipv4",
+            "--extractor-args", "youtube:player_client=android,web",
             "-o", outputTemplate,
             url
         };

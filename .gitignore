@@ -29,3 +29,4 @@ bin/yt-dlp*
 .env
 .env.local
 .DS_Store
+.vscode
