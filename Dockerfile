@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular Client
-FROM node:20 AS client-build
+FROM node:22 AS client-build
 WORKDIR /src/client
 COPY client/package*.json ./
 RUN npm install
