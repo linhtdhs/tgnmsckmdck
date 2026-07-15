@@ -12,8 +12,14 @@ data/*.sqlite-journal
 data/*.sqlite-wal
 data/*.sqlite-shm
 
-# Compiled web assets
+# Angular compiled assets and cache
 client/dist/
+client/.angular/
+
+# .NET compiled outputs and cache
+server/bin/
+server/obj/
+*.user
 
 # Downloaded yt-dlp binaries
 bin/yt-dlp*

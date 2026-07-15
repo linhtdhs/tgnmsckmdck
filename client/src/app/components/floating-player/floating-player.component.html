@@ -1,0 +1,66 @@
+@if (track) {
+  <div class="floating-player glass" [class.playing]="playing">
+
+    <!-- Window title bar with close button -->
+    <div class="player-window-header">
+      <span class="player-window-title">{{ statusLabel }}</span>
+      <button class="player-close-btn-top" (click)="close()" title="Close Player">✕</button>
+    </div>
+
+    <!-- Progress scrubber -->
+    <div class="scrub-row">
+      <span class="player-time">{{ formatTime(current) }}</span>
+      <input type="range" class="slider-input"
+             [min]="0" [max]="total || 0" [value]="current"
+             (input)="onScrub($event)" />
+      <span class="player-time">{{ formatTime(total) }}</span>
+      <!-- EQ visualizer bars -->
+      <div class="eq-container">
+        <div class="eq-bar eq-bar-1"></div>
+        <div class="eq-bar eq-bar-2"></div>
+        <div class="eq-bar eq-bar-3"></div>
+      </div>
+    </div>
+
+    <!-- Main layout: track info | controls | volume -->
+    <div class="player-main-layout">
+
+      <!-- Track info -->
+      <div class="player-track-info">
+        <img class="player-thumbnail"
+             [src]="track.thumbnail || 'https://placehold.co/120x120/10141f/f3f4f6?text=MP3'"
+             [alt]="track.title" />
+        <div class="player-text-details">
+          <div class="player-track-title" [title]="track.title">{{ track.title }}</div>
+          <div class="player-track-tags">{{ tagList }}</div>
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="player-controls">
+        <div class="control-buttons-row">
+          <button class="player-btn" [class.active]="shuffling" (click)="toggleShuffle()" title="Shuffle">⇌</button>
+          <button class="player-btn" (click)="prev()" title="Previous">◀◀</button>
+          <button class="player-btn-main" (click)="togglePlay()" [title]="playing ? 'Pause' : 'Play'">
+            {{ playing ? '❚❚' : '▶' }}
+          </button>
+          <button class="player-btn" (click)="next()" title="Next">▶▶</button>
+          <button class="player-btn" [class.active]="looping" (click)="toggleLoop()" title="Loop">↻</button>
+        </div>
+      </div>
+
+      <!-- Volume -->
+      <div class="player-utility">
+        <div class="volume-control">
+          <button class="player-btn" (click)="toggleMute()" [title]="muted ? 'Unmute' : 'Mute'">
+            {{ muted || volume === 0 ? '🔇' : '🔊' }}
+          </button>
+          <input type="range" class="slider-input"
+                 [min]="0" [max]="1" [step]="0.01" [value]="muted ? 0 : volume"
+                 (input)="onVolume($event)" />
+        </div>
+      </div>
+
+    </div>
+  </div>
+}

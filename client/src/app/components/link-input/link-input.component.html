@@ -1,0 +1,92 @@
+<section class="link-section glass">
+  <div class="section-title">
+    <span>&#127925;</span>
+    <h2>Add a Track</h2>
+  </div>
+
+  <!-- URL form -->
+  <form (ngSubmit)="submitUrl()" class="input-group">
+    <input
+      class="url-input"
+      type="url"
+      [(ngModel)]="urlInput"
+      name="urlInput"
+      placeholder="Paste a YouTube link..."
+      [disabled]="downloading() || isValidating()"
+      required
+    />
+    <button type="submit" class="btn-primary" [disabled]="downloading() || isValidating()">
+      @if (isValidating()) { <span>Checking...</span> }
+      @else { <span>I CHOOSE YOU!!!</span> }
+    </button>
+  </form>
+
+  <!-- Downloading progress -->
+  @if (downloading()) {
+    <div class="progress-card">
+      <div class="progress-details">
+        <div class="progress-title">{{ downloadStatus() }}</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" [style.width.%]="downloadProgress()"></div>
+        </div>
+        <div class="progress-status-text">
+          <span>{{ downloadProgress() | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Already in library -->
+  @if (validationResult()?.kind === 'exists') {
+    <div class="success-action-card">
+      <p style="color:var(--accent-green)">&#10004; This track is already in your library!</p>
+      <p style="margin:.5rem 0 1rem;font-size:1rem">{{ validationResult()?.kind === 'exists' ? $any(validationResult()).song.title : '' }}</p>
+      <div class="tag-suggestion-group">
+        <input class="tag-input-inline" placeholder="Add a tag..." [(ngModel)]="suggestedTagInput" name="suggestedTag" />
+        <button class="btn-primary" (click)="addTagToExistingSong(suggestedTagInput)">Add Tag</button>
+        <button class="btn-secondary" (click)="dismissValidation()">Dismiss</button>
+      </div>
+    </div>
+  }
+
+  <!-- New video — confirm download -->
+  @if (validationResult()?.kind === 'new') {
+    <div class="progress-card">
+      <div class="validation-wrapper">
+        <img class="progress-thumbnail"
+             [src]="$any(validationResult()).info.thumbnail"
+             [alt]="$any(validationResult()).info.title" />
+        <div style="flex:1">
+          <p style="font-weight:600;font-size:1rem;line-height:1.4">{{ $any(validationResult()).info.title }}</p>
+          <p style="color:var(--text-secondary);font-size:.85rem;margin-top:.2rem">
+            Duration: {{ formatTime($any(validationResult()).info.duration) }}
+          </p>
+          <div class="validation-buttons">
+            <button class="btn-primary" (click)="startDownload()">
+              &#8681; Convert and Save to Library
+            </button>
+            <button class="btn-secondary" (click)="dismissValidation()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Post-download tag prompt -->
+  @if (justDownloadedSong()) {
+    <div class="success-action-card">
+      <p style="color:var(--accent-green);font-size:.75rem;font-family:'Press Start 2P',cursive">
+        &#9889; DOWNLOAD COMPLETE &#9889;
+      </p>
+      <p style="margin:.5rem 0 1rem;font-size:1rem">{{ justDownloadedSong()!.title }}</p>
+      <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:1rem">
+        Add a tag to help organize it:
+      </p>
+      <div class="tag-suggestion-group">
+        <input class="tag-input-inline" placeholder="e.g. lofi, chill..." [(ngModel)]="downloadedTagInput" name="downloadedTag" />
+        <button class="btn-primary" (click)="addTagToDownloadedSong(downloadedTagInput); downloadedTagInput=''">Add Tag</button>
+        <button class="btn-secondary" (click)="dismissDownloaded()">Skip</button>
+      </div>
+    </div>
+  }
+</section>

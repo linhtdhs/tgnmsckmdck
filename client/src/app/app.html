@@ -1,0 +1,78 @@
+<div class="app-container">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <span>&#127925;</span>
+      <span>tgnmsckmdck</span>
+    </div>
+  </header>
+
+  <!-- Add Track section -->
+  <app-link-input (songDownloaded)="onSongDownloaded($event)" />
+
+  <!-- Library -->
+  <section class="library-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <app-tag-sidebar
+        [allTags]="tags()"
+        [searchQuery]="search()"
+        (selectedTagsChange)="onFilterChange()"
+        #tagSidebar
+      />
+    </aside>
+
+    <!-- Main area -->
+    <main>
+      <!-- Search bar -->
+      <div class="search-container">
+        <span class="search-icon-fixed">&#128269;</span>
+        <input class="search-input"
+               type="text"
+               placeholder="Search songs or tags..."
+               [value]="search()"
+               (input)="onSearch($any($event.target).value)" />
+        @if (search()) {
+          <button
+            style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem"
+            (click)="onSearch('')">✕</button>
+        }
+      </div>
+
+      <!-- Song grid -->
+      <div class="song-grid">
+        @if (loading()) {
+          <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">
+            Loading...
+          </div>
+        } @else if (songs().length === 0) {
+          <div class="empty-library">
+            <span class="empty-library-icon">&#127925;</span>
+            <p style="font-weight:500">No songs found in the library</p>
+            <p style="color:var(--text-muted);font-size:.9rem;margin-top:-.5rem">
+              Paste a YouTube video link above to download and catalog your first song!
+            </p>
+          </div>
+        } @else {
+          @for (song of songs(); track song.id) {
+            <app-song-card
+              [song]="song"
+              (deleted)="onSongDeleted($event)"
+              (tagAdded)="onTagChanged($event)"
+              (tagRemoved)="onTagChanged($event)"
+            />
+          }
+        }
+      </div>
+    </main>
+
+  </section>
+</div>
+
+<!-- Floating audio player -->
+<app-floating-player />
+
+<!-- Toast stack -->
+<app-toast />

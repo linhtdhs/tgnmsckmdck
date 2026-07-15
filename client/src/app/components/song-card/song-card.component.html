@@ -1,0 +1,53 @@
+<div class="song-card glass" [class.playing]="isPlaying">
+
+  <div class="song-thumbnail-wrapper" (click)="play()">
+    <img class="song-card-thumbnail"
+         [src]="song.thumbnail || 'https://placehold.co/600x400/10141f/f3f4f6?text=No+Thumbnail'"
+         [alt]="song.title" />
+    <div class="song-card-overlay">
+      <button class="play-overlay-btn">&#9658;</button>
+    </div>
+    @if (song.duration) {
+      <span class="duration-tag">{{ formatTime(song.duration) }}</span>
+    }
+  </div>
+
+  <div class="song-info">
+    <h3 class="song-card-title" (click)="play()" [title]="song.title">{{ song.title }}</h3>
+
+    <div class="song-card-tags">
+      @for (tag of song.tags; track tag.id) {
+        <span class="song-tag-badge">
+          <span style="text-transform:capitalize">{{ tag.name }}</span>
+          <button class="btn-tag-delete" (click)="removeTag(tag.id, tag.name)" title="Remove tag">&#10005;</button>
+        </span>
+      }
+
+      @if (showTagInput()) {
+        <div class="inline-tag-editor" (click)="$event.stopPropagation()">
+          <input class="tag-input-inline"
+                 style="padding:.15rem .4rem;font-size:.75rem;flex:1"
+                 placeholder="New tag..."
+                 [ngModel]="tagValue()"
+                 (ngModelChange)="tagValue.set($event)"
+                 (keydown)="onTagKeydown($event)"
+                 autofocus />
+          <button class="action-btn" (click)="addTag()">Add</button>
+          <button class="action-btn" (click)="showTagInput.set(false); tagValue.set('')">&#10005;</button>
+        </div>
+      } @else {
+        <button class="add-tag-inline-btn" (click)="$event.stopPropagation(); showTagInput.set(true)">
+          + tag
+        </button>
+      }
+    </div>
+
+    <div class="song-card-footer">
+      <span class="song-date">{{ song.created_at | date:'mediumDate' }}</span>
+      <div class="song-actions-buttons">
+        <a [href]="api.getDownloadUrl(song.id)" class="action-btn" title="Download MP3">&#8681;</a>
+        <button class="action-btn delete-btn" (click)="deleteSong()" title="Delete Song">&#128465;</button>
+      </div>
+    </div>
+  </div>
+</div>
