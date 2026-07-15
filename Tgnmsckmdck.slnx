@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/client/">
+    <Project Path="client/TgnmsckmdckClient.esproj" />
+  </Folder>
+  <Folder Name="/server/">
+    <Project Path="server/TgnmsckmdckApi.csproj" />
+  </Folder>
+</Solution>
