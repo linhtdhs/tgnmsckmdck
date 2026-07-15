@@ -14,7 +14,9 @@ COPY client/*.esproj ./client/
 RUN dotnet restore server/TgnmsckmdckApi.csproj
 COPY . ./
 WORKDIR /src/server
-RUN dotnet publish TgnmsckmdckApi.csproj -c Release -o /app/publish /p:UseAppHost=false /p:BuildCommand= /p:PublishCommand=
+# Completely remove the frontend reference so .NET SDK ignores it during publish
+RUN dotnet remove TgnmsckmdckApi.csproj reference ../client/TgnmsckmdckClient.esproj
+RUN dotnet publish TgnmsckmdckApi.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
