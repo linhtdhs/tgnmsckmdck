@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using TgnmsckmdckApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +8,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddSingleton<DatabaseService>();
 builder.Services.AddSingleton<DownloaderService>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("ApiPolicy", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 5;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 // CORS: allow Angular dev server during development
 builder.Services.AddCors(options =>
@@ -58,7 +72,8 @@ if (Directory.Exists(angularDist))
 }
 
 app.UseRouting();
-app.MapControllers();
+app.UseRateLimiter();
+app.MapControllers().RequireRateLimiting("ApiPolicy");
 
 // SPA fallback — return index.html for any unmatched non-API routes
 if (Directory.Exists(angularDist))
